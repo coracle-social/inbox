@@ -3,25 +3,22 @@
   import "@fortawesome/fontawesome-free/css/solid.css"
 
   import cx from "classnames"
-  import {batch} from "hurdak"
-  import {onMount, onDestroy} from 'svelte'
-  import {uniqBy, prop} from "ramda"
+  import {batch, chunk} from "hurdak"
+  import {onMount, onDestroy} from "svelte"
+  import {sortBy, uniqBy, identity, uniq, prop} from "ramda"
   import type {Event} from "nostr-tools"
   import {fly, fade} from "svelte/transition"
   import {get} from "svelte/store"
-  import Thread from "./Thread.svelte"
+  import Channel from "./Channel.svelte"
+  import ChannelList from "./ChannelList.svelte"
   import {fromHex, getMeta} from "./util"
-  import {executor, contacts, messages, draft, privkey, pubkey, login} from "./state"
+  import {executor, contacts, channels, messages, draft, privkey, pubkey, login} from "./state"
   import {decrypt, utf8Encoder, getConversationKey} from "./nip24"
 
-  Object.assign(window, {get, messages, contacts})
+  Object.assign(window, {get, messages, contacts, channels})
 
   const newMessage = () => {
-    draft.set({
-      subject: "Hi Vitor",
-      content: "hello",
-      recipients: ["460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c"],
-    })
+    draft.set({subject: "", content: "", recipients: []})
   }
 
   const clearMessage = () => {
@@ -35,6 +32,7 @@
           pubkey: e.pubkey,
           relays_updated_at: 0,
           profile_updated_at: 0,
+          petnames_updated_at: 0,
         }
 
         if (e.kind === 0 && e.created_at > p.profile_updated_at) {
@@ -48,7 +46,16 @@
           }
         }
 
-        if (e.kind === 10002) {
+        if (e.kind === 3 && e.created_at > p.petnames_updated_at) {
+          p.petnames = e.tags
+          p.petnames_updated_at = e.created_at
+
+          if (p.pubkey === $pubkey) {
+            e.tags.filter(t => t[0] === "p").map(t => loadPubkey(t[1]))
+          }
+        }
+
+        if (e.kind === 10002 && e.created_at > p.relays_updated_at) {
           p.relays = e.tags
           p.relays_updated_at = e.created_at
         }
@@ -61,20 +68,20 @@
   })
 
   const loadPubkey = batch(500, pubkeys => {
-    pubkeys = Array.from(new Set(pubkeys))
+    chunk(255, Array.from(new Set(pubkeys))).forEach(authors => {
+      const sub = executor.subscribe([{kinds: [0, 3, 10002], authors}], {
+        onEvent: (url, e) => onProfileEvent(e),
+      })
 
-    const sub = executor.subscribe([{kinds: [0, 10002], authors: pubkeys}], {
-      onEvent: (url, e) => onProfileEvent(e),
+      setTimeout(() => sub.unsubscribe(), 3000)
     })
-
-    setTimeout(() => sub.unsubscribe(), 3000)
   })
 
   const onEvent = batch(500, (events: Event[]) => {
     const key = fromHex($privkey)
 
-    messages.update($messages => {
-      for (const gift of events) {
+    const newMessages = events
+      .map(gift => {
         let seal, rumor
 
         try {
@@ -86,16 +93,38 @@
         } catch (e) {
           console.warn(e)
 
-          continue
+          return
         }
 
-        const msg = {gift, seal, rumor}
-        const msgs = $messages.get(seal.pubkey) || []
+        const pubkeys = rumor.tags
+          .filter(t => t[0] === "p")
+          .map(t => t[1])
+          .concat(rumor.pubkey)
+        const channel = sortBy(identity, pubkeys).join(",")
+
+        return {gift, seal, rumor, channel}
+      })
+      .filter(identity)
+
+    channels.update($channels => {
+      const newChannels = newMessages.map(m => ({
+        id: m.channel,
+        pubkeys: m.channel.split(","),
+        subject: getMeta(m.rumor).subject,
+      }))
+
+      return uniqBy(prop("id"), $channels.concat(newChannels))
+    })
+
+    messages.update($messages => {
+      for (const msg of newMessages) {
+        const msgs = $messages.get(msg.channel) || []
         const combined = uniqBy(m => m.gift.id, msgs.concat(msg))
 
-        $messages.set(seal.pubkey, combined)
-        loadPubkey(seal.pubkey)
-        loadPubkey(getMeta(rumor).p)
+        $messages.set(msg.channel, combined)
+
+        loadPubkey(msg.seal.pubkey)
+        loadPubkey(getMeta(msg.rumor).p)
       }
 
       return $messages
@@ -115,7 +144,7 @@
   })
 </script>
 
-<div class="max-w-screen-md mx-auto">
+<div class="max-w-screen-md mx-2 md:mx-auto">
   <div class="padding flex items-center justify-between border-b border-blue-100 border-solid">
     <h1 class="text-2xl">Gift Wrapper</h1>
     <div class="flex justify-end">
@@ -130,9 +159,11 @@
       {/if}
     </div>
   </div>
-  <div class="padding">
+  <div>
     {#if $draft}
-      <Thread />
+      <Channel />
+    {:else}
+      <ChannelList />
     {/if}
   </div>
   <small class="padding text-gray-400 text-center block">

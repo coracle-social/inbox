@@ -41,6 +41,7 @@
     "@stablelib/xchacha20": "^1.0.1",
     "classnames": "^2.3.2",
     "eslint-plugin-svelte": "^2.32.2",
+    "fuse.js": "^6.6.2",
     "hurdak": "^0.2.4",
     "nostr-tools": "^1.13.1",
     "paravel": "^0.2.0",

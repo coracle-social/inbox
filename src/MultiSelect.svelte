@@ -1,17 +1,17 @@
 <script type="ts">
+  import {identity} from "ramda"
+
   export let value
   export let name = ""
+  export let search
+  export let toValue = identity
 
   let input = ""
+  let element
 
   const onKeyDown = event => {
     if (event.key === "Escape") {
       event.stopPropagation()
-      input = ""
-    }
-
-    if (event.key === "Enter") {
-      value = value.concat(input)
       input = ""
     }
 
@@ -23,6 +23,14 @@
   const removeItem = item => {
     value = value.filter(v => v !== item)
   }
+
+  const select = item => {
+    value = value.concat(toValue(item))
+    input = ""
+    element.focus()
+  }
+
+  $: suggestions = search(input)
 </script>
 
 <div>
@@ -34,5 +42,25 @@
       </slot>
     </div>
   {/each}
-  <input class="input-default" bind:value={input} on:keydown={onKeyDown} {name} />
+  <input
+    type="text"
+    autocomplete="off"
+    class="input-default"
+    bind:this={element}
+    bind:value={input}
+    on:keydown={onKeyDown}
+    {name} />
+  {#if input && suggestions.length > 0}
+    <div class="relative">
+      <div class="absolute flex flex-col gap-2 card-default bg-white mt-1">
+        {#each suggestions as item}
+          <div class="padding hover:bg-blue-100 cursor-pointer" on:click={() => select(item)}>
+            <slot name="item" context="option" {item}>
+              {item}
+            </slot>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 </div>
