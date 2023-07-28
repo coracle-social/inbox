@@ -6,7 +6,7 @@ export const executor = getExecutor(["wss://relay.damus.io"])
 
 export const privkey = writable(localStorage.getItem("privkey"))
 
-export const pubkey = derived(privkey, getPublicKey)
+export const pubkey = derived(privkey, k => k ? getPublicKey(k) : null)
 
 export const messages = writable(new Map())
 

@@ -131,22 +131,36 @@
     })
   })
 
-  let sub
 
-  onMount(() => {
-    sub = executor.subscribe([{kinds: [1059], "#p": [$pubkey]}], {
+  const loadMessages = () => {
+    return executor.subscribe([{kinds: [1059], "#p": [$pubkey]}], {
       onEvent: (url, e: Event) => onEvent(e),
     })
+  }
+
+  let sub
+
+  pubkey.subscribe($pubkey => {
+    if ($pubkey) {
+      sub?.unsubscribe()
+      loadMessages()
+    }
+  })
+
+  onMount(() => {
+    if ($privkey) {
+      sub = loadMessages()
+    }
   })
 
   onDestroy(() => {
-    sub.unsubscribe()
+    sub?.unsubscribe()
   })
 </script>
 
 <div class="max-w-screen-md mx-2 md:mx-auto">
   <div class="padding flex items-center justify-between border-b border-blue-100 border-solid">
-    <h1 class="text-2xl">Gift Wrapper</h1>
+    <h1 class="text-2xl">Inbox</h1>
     <div class="flex justify-end">
       {#if $pubkey}
         {#if $draft}
@@ -167,6 +181,6 @@
     {/if}
   </div>
   <small class="padding text-gray-400 text-center block">
-    Gift Wrapper is powered by NIP-59 and NIP-112.
+    Inbox is powered by NIP-59 and NIP-112.
   </small>
 </div>
