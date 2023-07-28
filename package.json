@@ -1,5 +1,5 @@
 {
-  "name": "inbox.coracle.social",
+  "name": "@coracle-social/inbox",
   "version": "1.0.0",
   "private": true,
   "type": "module",
