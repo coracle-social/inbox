@@ -160,7 +160,7 @@
 
 <div class="max-w-screen-md mx-2 md:mx-auto">
   <div class="padding flex items-center justify-between border-b border-blue-100 border-solid">
-    <h1 class="text-2xl">Inbox</h1>
+    <h1 class="text-2xl cursor-pointer" on:click={() => draft.set(null)}>Inbox</h1>
     <div class="flex justify-end">
       {#if $pubkey}
         {#if $draft}
@@ -181,6 +181,7 @@
     {/if}
   </div>
   <small class="padding text-gray-400 text-center block">
-    Inbox is powered by NIP-59 and NIP-112.
+    <a class="underline" href="https://github.com/coracle-social/inbox" target="_blank">Inbox</a>
+    is powered by NIP-59 and NIP-112.
   </small>
 </div>
