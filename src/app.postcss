@@ -1,0 +1,43 @@
+/* Write your global styles here, in PostCSS syntax */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .card-error {
+    @apply rounded bg-red-500 text-white;
+  }
+
+  .card-success {
+    @apply rounded bg-green-500 text-white;
+  }
+
+  .card-default {
+    @apply rounded border-solid border border-blue-100;
+  }
+
+  .button1 {
+    @apply rounded-full bg-blue-500 text-white;
+  }
+
+  .button2 {
+    @apply border-solid border rounded-full;
+  }
+
+  .button3 {
+    @apply rounded-full bg-red-500 text-white;
+  }
+
+  .label {
+    @apply py-1;
+  }
+
+  .input-default {
+    @apply h-8 rounded-lg border-solid border border-blue-100 py-1 px-2;
+  }
+
+  .padding {
+    @apply py-2 px-3;
+  }
+}
+
