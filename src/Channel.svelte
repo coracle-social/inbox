@@ -1,26 +1,37 @@
 <script lang="ts">
-  import {sortBy, prop, identity} from 'ramda'
-  import {getPublicKey, getEventHash, getSignature, generatePrivateKey} from "nostr-tools"
-  import MultiSelect from './MultiSelect.svelte'
-  import PersonBadge from './PersonBadge.svelte'
-  import {now, fuzzy, fromHex} from './util'
-  import {draft, executor, privkey, pubkey, contacts, messages, getName, getPicture} from './state'
-  import {createRumor, createSeal, createGift, getConversationKey, decrypt} from './nip24'
+  import {sortBy, prop, identity} from "ramda"
+  import MultiSelect from "./MultiSelect.svelte"
+  import PersonBadge from "./PersonBadge.svelte"
+  import {fuzzy} from "./util"
+  import {
+    draft,
+    executor,
+    privkey,
+    pubkey,
+    contacts,
+    messages,
+    getName,
+    getPicture,
+    loadMessages,
+  } from "./state"
+  import {createRumor, createSeal, createGift} from "./nip24"
 
   const send = async () => {
     const rumor = createRumor($pubkey, $draft)
+
+    $draft.content = ""
 
     for (const key of $draft.recipients.concat($pubkey)) {
       const seal = createSeal($privkey, key, rumor)
       const gift = createGift(key, seal, $privkey)
 
-      executor.publish(gift, {})
+      await executor.publish(gift, {})
     }
 
-    $draft.content = ""
+    loadMessages()
   }
 
-  $: channelId = sortBy(identity, $draft.recipients.concat($pubkey)).join(',')
+  $: channelId = sortBy(identity, $draft.recipients.concat($pubkey)).join(",")
   $: channelMessages = $messages.get(channelId) || []
   $: search = fuzzy(Array.from($contacts.values()), {
     keys: ["profile.name", "profile.display_name", "profile.displayName"],
@@ -47,7 +58,7 @@
   </div>
   <div class="flex gap-4">
     <label for="recipients" class="label">Recipients:</label>
-    <MultiSelect name="subject" bind:value={$draft.recipients} toValue={prop('pubkey')} {search}>
+    <MultiSelect name="subject" bind:value={$draft.recipients} toValue={prop("pubkey")} {search}>
       <span slot="item" let:item let:context>
         {#if context === "value"}
           {getName($contacts, item)}

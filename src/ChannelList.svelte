@@ -1,9 +1,8 @@
 <script lang="ts">
-  import cx from 'classnames'
-  import {without} from 'ramda'
-  import {derived} from 'svelte/store'
-  import PersonBadge from './PersonBadge.svelte'
-  import {draft, pubkey, channels, contacts, getName, getPicture} from './state'
+  import {without} from "ramda"
+  import {derived} from "svelte/store"
+  import PersonBadge from "./PersonBadge.svelte"
+  import {draft, pubkey, channels, contacts, getName, getPicture} from "./state"
 
   const updatedChannels = derived([channels, contacts], ([$channels]) => $channels)
 

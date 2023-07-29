@@ -15,6 +15,12 @@
       input = ""
     }
 
+    if (event.key === "Enter") {
+      event.stopPropagation()
+      value = value.concat(input)
+      input = ""
+    }
+
     if (event.key === "Backspace" && !input) {
       value = value.slice(0, -1)
     }
